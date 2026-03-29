@@ -9,6 +9,10 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 
+const PORT = process.env.PORT || 3000;
+const MONGODB_URI =
+  process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/chat";
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
@@ -20,7 +24,7 @@ app.get("/", (req, res) => {
 });
 
 mongoose
-  .connect("mongodb://127.0.0.1:27017/chat")
+  .connect(MONGODB_URI)
   .then(() => console.log("MongoDB connected"))
   .catch((err) => console.log("MongoDB error:", err));
 
@@ -120,7 +124,6 @@ app.post("/logout", async (req, res) => {
   }
 });
 
-// users
 // get my friends
 app.get("/friends/:email", async (req, res) => {
   try {
@@ -180,6 +183,7 @@ app.post("/addFriend", async (req, res) => {
     res.json({ success: false, msg: "เกิดข้อผิดพลาดในการเพิ่มเพื่อน" });
   }
 });
+
 app.get("/users", async (req, res) => {
   try {
     const users = await User.find().sort({ name: 1 });
@@ -193,7 +197,7 @@ app.get("/users", async (req, res) => {
 // create group
 app.post("/createRoom", async (req, res) => {
   try {
-    const { name, members, isGroup } = req.body;
+    const { name, members } = req.body;
 
     if (!name || !name.trim()) {
       return res.json({ success: false, msg: "กรุณาใส่ชื่อกลุ่ม" });
@@ -361,7 +365,6 @@ io.on("connection", (socket) => {
   });
 });
 
-server.listen(3000, () => {
-  console.log("Server running on 3000");
-  console.log("Open: http://localhost:3000");
+server.listen(PORT, () => {
+  console.log(`Server running on ${PORT}`);
 });
