@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PSU Chat</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="chat-layout">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h2>PSU Chat</h2>
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+
+    <div id="currentUserBox" class="current-user"></div>
+
+    <div class="group-create-box">
+      <input id="friendEmail" type="email" placeholder="เพิ่มเพื่อนด้วยอีเมล PSU" />
+      <button onclick="addFriend()">เพิ่มเพื่อน</button>
+    </div>
+
+    <div class="list-section">
+      <h3>แชทส่วนตัว</h3>
+      <input id="searchFriend" type="text" placeholder="ค้นหาเพื่อน..." oninput="filterFriends()" />
+      <div id="userList"></div>
+    </div>
+
+    <div class="group-create-box">
+      <input id="groupName" placeholder="ชื่อกลุ่ม">
+      <div id="groupMemberSelector" class="member-selector"></div>
+      <button onclick="createGroup()">สร้างกลุ่ม</button>
+    </div>
+
+    <div class="list-section">
+      <h3>แชทกลุ่ม</h3>
+      <div id="groupList"></div>
+    </div>
+  </aside>
+
+  <main class="chat-main">
+    <div id="chatHeader" class="chat-header">เลือกผู้ใช้หรือกลุ่มเพื่อเริ่มแชท</div>
+
+    <div id="chatBox" class="chat-box"></div>
+
+    <div class="chat-input-area">
+      <input id="msg" type="text" placeholder="พิมพ์ข้อความ...">
+      <input id="fileInput" type="file">
+      <button onclick="sendMessage()">Send</button>
+      <button onclick="sendFile()">Upload</button>
+    </div>
+  </main>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

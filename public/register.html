@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Register - PSU Chat</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .lang-switch {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .lang-switch button {
+      width: auto;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 10px;
+      background: #e9f1ff;
+      color: #1877f2;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .lang-switch button.active {
+      background: #1877f2;
+      color: white;
+    }
+  </style>
+</head>
+<body class="auth-body">
+
+  <div class="auth-card">
+    <div class="lang-switch">
+      <button id="btn-th" onclick="setLang('th')">ไทย</button>
+      <button id="btn-en" onclick="setLang('en')">EN</button>
+    </div>
+
+    <h1>PSU Chat</h1>
+    <p class="subtitle" id="subtitle">สมัครสมาชิก</p>
+
+    <input id="email" type="email" placeholder="เลขนักศึกษา10ตัว@psu.ac.th" />
+    <input id="name" type="text" placeholder="ชื่อจริง" />
+    <input id="password" type="password" placeholder="รหัสผ่าน" />
+    <input id="confirm" type="password" placeholder="ยืนยันรหัสผ่าน" />
+
+    <button id="registerBtn" onclick="register()">สมัครสมาชิก</button>
+
+    <p id="msg" class="message-text" style="color:red;"></p>
+
+    <p class="switch-page">
+      <span id="haveAccountText">มีบัญชีแล้ว?</span>
+      <a href="login.html" id="loginLink">เข้าสู่ระบบ</a>
+    </p>
+  </div>
+
+  <script>
+    const translations = {
+      th: {
+        pageTitle: "Register - PSU Chat",
+        subtitle: "สมัครสมาชิก",
+        emailPlaceholder: "เลขนักศึกษา10ตัว@psu.ac.th",
+        namePlaceholder: "ชื่อจริง",
+        passwordPlaceholder: "รหัสผ่าน",
+        confirmPlaceholder: "ยืนยันรหัสผ่าน",
+        registerBtn: "สมัครสมาชิก",
+        haveAccountText: "มีบัญชีแล้ว?",
+        loginLink: "เข้าสู่ระบบ",
+        emptyFields: "กรุณากรอกข้อมูลให้ครบ",
+        passwordMismatch: "รหัสผ่านไม่ตรงกัน"
+      },
+      en: {
+        pageTitle: "Register - PSU Chat",
+        subtitle: "Register",
+        emailPlaceholder: "10-digit student ID@psu.ac.th",
+        namePlaceholder: "Full name",
+        passwordPlaceholder: "Password",
+        confirmPlaceholder: "Confirm password",
+        registerBtn: "Register",
+        haveAccountText: "Already have an account?",
+        loginLink: "Login",
+        emptyFields: "Please fill in all fields",
+        passwordMismatch: "Passwords do not match"
+      }
+    };
+
+    let currentLang = localStorage.getItem("lang") || "th";
+
+    function applyLanguage() {
+      const t = translations[currentLang];
+
+      document.documentElement.lang = currentLang === "th" ? "th" : "en";
+      document.title = t.pageTitle;
+      document.getElementById("subtitle").innerText = t.subtitle;
+      document.getElementById("email").placeholder = t.emailPlaceholder;
+      document.getElementById("name").placeholder = t.namePlaceholder;
+      document.getElementById("password").placeholder = t.passwordPlaceholder;
+      document.getElementById("confirm").placeholder = t.confirmPlaceholder;
+      document.getElementById("registerBtn").innerText = t.registerBtn;
+      document.getElementById("haveAccountText").innerText = t.haveAccountText;
+      document.getElementById("loginLink").innerText = t.loginLink;
+
+      document.getElementById("btn-th").classList.toggle("active", currentLang === "th");
+      document.getElementById("btn-en").classList.toggle("active", currentLang === "en");
+    }
+
+    function setLang(lang) {
+      currentLang = lang;
+      localStorage.setItem("lang", lang);
+      applyLanguage();
+    }
+
+    async function register() {
+      const email = document.getElementById("email").value.trim();
+      const name = document.getElementById("name").value.trim();
+      const password = document.getElementById("password").value.trim();
+      const confirm = document.getElementById("confirm").value.trim();
+      const msg = document.getElementById("msg");
+      const t = translations[currentLang];
+
+      msg.style.color = "red";
+      msg.innerText = "";
+
+      if (!email || !name || !password || !confirm) {
+        msg.innerText = t.emptyFields;
+        return;
+      }
+
+      if (password !== confirm) {
+        msg.innerText = t.passwordMismatch;
+        return;
+      }
+
+      const res = await fetch("/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          name,
+          password
+        })
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        msg.innerText = data.msg;
+        return;
+      }
+
+      msg.style.color = "green";
+      msg.innerText = data.msg;
+
+      setTimeout(() => {
+        window.location.href = "login.html";
+      }, 1000);
+    }
+
+    document.getElementById("confirm").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        register();
+      }
+    });
+
+    document.getElementById("password").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        register();
+      }
+    });
+
+    document.getElementById("name").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        register();
+      }
+    });
+
+    document.getElementById("email").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        register();
+      }
+    });
+
+    applyLanguage();
+  </script>
+
+</body>
+</html>

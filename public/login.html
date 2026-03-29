@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login - PSU Chat</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .lang-switch {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .lang-switch button {
+      width: auto;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 10px;
+      background: #e9f1ff;
+      color: #1877f2;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .lang-switch button.active {
+      background: #1877f2;
+      color: white;
+    }
+  </style>
+</head>
+<body class="auth-body">
+
+  <div class="auth-card">
+    <div class="lang-switch">
+      <button id="btn-th" onclick="setLang('th')">ไทย</button>
+      <button id="btn-en" onclick="setLang('en')">EN</button>
+    </div>
+
+    <h1>PSU Chat</h1>
+    <p class="subtitle" id="subtitle">เข้าสู่ระบบ</p>
+
+    <input id="email" type="email" placeholder="อีเมลมหาวิทยาลัย" />
+    <input id="password" type="password" placeholder="รหัสผ่าน" />
+
+    <button id="loginBtn" onclick="login()">เข้าสู่ระบบ</button>
+
+    <p id="msg" class="message-text" style="color:red;"></p>
+
+    <p class="switch-page">
+      <span id="noAccountText">ยังไม่มีบัญชี?</span>
+      <a href="register.html" id="registerLink">สมัครสมาชิก</a>
+    </p>
+  </div>
+
+  <script>
+    const translations = {
+      th: {
+        pageTitle: "Login - PSU Chat",
+        subtitle: "เข้าสู่ระบบ",
+        emailPlaceholder: "อีเมลมหาวิทยาลัย",
+        passwordPlaceholder: "รหัสผ่าน",
+        loginBtn: "เข้าสู่ระบบ",
+        noAccountText: "ยังไม่มีบัญชี?",
+        registerLink: "สมัครสมาชิก",
+        emptyFields: "กรุณากรอกอีเมลและรหัสผ่าน"
+      },
+      en: {
+        pageTitle: "Login - PSU Chat",
+        subtitle: "Login",
+        emailPlaceholder: "University email",
+        passwordPlaceholder: "Password",
+        loginBtn: "Login",
+        noAccountText: "Don't have an account?",
+        registerLink: "Register",
+        emptyFields: "Please enter your email and password"
+      }
+    };
+
+    let currentLang = localStorage.getItem("lang") || "th";
+
+    function applyLanguage() {
+      const t = translations[currentLang];
+
+      document.documentElement.lang = currentLang === "th" ? "th" : "en";
+      document.title = t.pageTitle;
+      document.getElementById("subtitle").innerText = t.subtitle;
+      document.getElementById("email").placeholder = t.emailPlaceholder;
+      document.getElementById("password").placeholder = t.passwordPlaceholder;
+      document.getElementById("loginBtn").innerText = t.loginBtn;
+      document.getElementById("noAccountText").innerText = t.noAccountText;
+      document.getElementById("registerLink").innerText = t.registerLink;
+
+      document.getElementById("btn-th").classList.toggle("active", currentLang === "th");
+      document.getElementById("btn-en").classList.toggle("active", currentLang === "en");
+    }
+
+    function setLang(lang) {
+      currentLang = lang;
+      localStorage.setItem("lang", lang);
+      applyLanguage();
+    }
+
+    async function login() {
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value.trim();
+      const msg = document.getElementById("msg");
+      const t = translations[currentLang];
+
+      msg.innerText = "";
+
+      if (!email || !password) {
+        msg.innerText = t.emptyFields;
+        return;
+      }
+
+      const res = await fetch("/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        msg.innerText = data.msg;
+        return;
+      }
+
+      localStorage.setItem("user", JSON.stringify(data.user));
+      window.location.href = "chat.html";
+    }
+
+    document.getElementById("password").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        login();
+      }
+    });
+
+    document.getElementById("email").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        login();
+      }
+    });
+
+    applyLanguage();
+  </script>
+
+</body>
+</html>
