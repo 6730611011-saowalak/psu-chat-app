@@ -327,6 +327,8 @@ io.on("connection", (socket) => {
     try {
       if (!userData || !userData.email) return;
 
+      socket.userEmail = userData.email;
+
       const user = await User.findOne({ email: userData.email });
       if (user) {
         user.status = "online";
@@ -398,8 +400,27 @@ io.on("connection", (socket) => {
       console.log(error);
     }
   });
+
+  socket.on("disconnect", async () => {
+    try {
+      const email = socket.userEmail;
+
+      if (email) {
+        const user = await User.findOne({ email });
+        if (user) {
+          user.status = "offline";
+          await user.save();
+          io.emit("refreshUsers");
+        }
+      }
+
+      console.log("User disconnected:", email);
+    } catch (err) {
+      console.log(err);
+    }
+  });
 });
 
 server.listen(PORT, () => {
-  console.log(`Server running:http://localhost:${PORT}`);
+  console.log(`Server running: http://localhost:${PORT}`);
 });
