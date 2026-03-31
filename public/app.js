@@ -12,19 +12,18 @@ const chatBox = document.getElementById("chatBox");
 const chatHeader = document.getElementById("chatHeader");
 const msgInput = document.getElementById("msg");
 const fileInput = document.getElementById("fileInput");
-
-// เพิ่ม 2 อันนี้
 const searchFriendInput = document.getElementById("searchFriend");
 const groupMemberSelector = document.getElementById("groupMemberSelector");
+const searchAllUsersInput = document.getElementById("searchAllUsers");
+const searchResults = document.getElementById("searchResults");
 
 let currentRoom = "";
-let currentChatName = "";
 let friendCache = [];
 
 currentUserBox.innerHTML = `
   <div><strong>${user.name}</strong></div>
   <div>${user.email}</div>
-  <div style="color: green; font-weight: bold;">สถานะ: ออนไลน์</div>
+  <div class="online-text">สถานะ: ออนไลน์</div>
 `;
 
 socket.emit("userOnline", user);
@@ -44,18 +43,15 @@ function createPrivateRoom(a, b) {
   return [a, b].sort().join("-");
 }
 
-// ดึงเฉพาะเพื่อน
 async function loadUsers() {
   const res = await fetch(`/friends/${encodeURIComponent(user.email)}`);
   const users = await res.json();
 
   friendCache = users.filter((u) => u.email !== user.email);
-
   renderFriendList(friendCache);
   renderGroupMemberSelector(friendCache);
 }
 
-// แสดงรายชื่อเพื่อน
 function renderFriendList(users) {
   userList.innerHTML = "";
 
@@ -81,7 +77,6 @@ function renderFriendList(users) {
   });
 }
 
-// ค้นหาเพื่อน
 function filterFriends() {
   const keyword = (searchFriendInput?.value || "").trim().toLowerCase();
 
@@ -100,7 +95,64 @@ function filterFriends() {
   renderFriendList(filtered);
 }
 
-// แสดงช่องเลือกสมาชิกตอนสร้างกลุ่ม
+async function searchAllUsers() {
+  const keyword = (searchAllUsersInput?.value || "").trim();
+
+  if (!keyword) {
+    searchResults.innerHTML = "";
+    return;
+  }
+
+  const res = await fetch(`/searchUsers?keyword=${encodeURIComponent(keyword)}&myEmail=${encodeURIComponent(user.email)}`);
+  const users = await res.json();
+
+  searchResults.innerHTML = "";
+
+  if (!users.length) {
+    searchResults.innerHTML = `<div class="item-sub">ไม่พบผู้ใช้</div>`;
+    return;
+  }
+
+  users.forEach((u) => {
+    const alreadyFriend = friendCache.some((f) => f.email === u.email);
+
+    const div = document.createElement("div");
+    div.className = "list-item";
+    div.innerHTML = `
+      <div class="item-top">
+        <span>${u.name}</span>
+        <span class="${u.status === "online" ? "status-online" : "status-offline"}">
+          ${u.status}
+        </span>
+      </div>
+      <div class="item-sub">${u.email}</div>
+      <button class="mini-btn" ${alreadyFriend ? "disabled" : ""} onclick="event.stopPropagation(); addFriendByEmail('${u.email}')">
+        ${alreadyFriend ? "เพิ่มแล้ว" : "เพิ่มเพื่อน"}
+      </button>
+    `;
+    searchResults.appendChild(div);
+  });
+}
+
+async function addFriendByEmail(email) {
+  const res = await fetch("/addFriend", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      myEmail: user.email,
+      friendEmail: email
+    })
+  });
+
+  const data = await res.json();
+  alert(data.msg);
+
+  if (data.success) {
+    await loadUsers();
+    searchAllUsers();
+  }
+}
+
 function renderGroupMemberSelector(users) {
   if (!groupMemberSelector) return;
 
@@ -147,7 +199,6 @@ async function loadGroups() {
 
 function startPrivateChat(targetUser) {
   currentRoom = createPrivateRoom(user.name, targetUser.name);
-  currentChatName = targetUser.name;
   chatHeader.textContent = `แชทกับ ${targetUser.name}`;
   socket.emit("joinRoom", currentRoom);
   loadMessages(currentRoom);
@@ -155,7 +206,6 @@ function startPrivateChat(targetUser) {
 
 function startGroupChat(room) {
   currentRoom = room.name;
-  currentChatName = room.name;
   chatHeader.textContent = `กลุ่ม: ${room.name}`;
   socket.emit("joinRoom", currentRoom);
   loadMessages(currentRoom);
@@ -166,7 +216,6 @@ async function loadMessages(room) {
   const messages = await res.json();
 
   chatBox.innerHTML = "";
-
   messages.forEach(renderMessage);
   scrollToBottom();
 }
@@ -261,7 +310,6 @@ async function sendFile() {
   fileInput.value = "";
 }
 
-// เพิ่มเพื่อน
 async function addFriend() {
   const friendEmail = document.getElementById("friendEmail").value.trim();
 
@@ -288,7 +336,6 @@ async function addFriend() {
   }
 }
 
-// สร้างกลุ่มแบบเลือกสมาชิก
 async function createGroup() {
   const groupName = document.getElementById("groupName").value.trim();
 
@@ -313,8 +360,7 @@ async function createGroup() {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       name: groupName,
-      members,
-      isGroup: true
+      members
     })
   });
 

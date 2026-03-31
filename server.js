@@ -3,7 +3,6 @@ const http = require("http");
 const socketIo = require("socket.io");
 const mongoose = require("mongoose");
 const multer = require("multer");
-const path = require("path");
 
 const app = express();
 const server = http.createServer(app);
@@ -18,7 +17,6 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
 app.use("/uploads", express.static("uploads"));
 
-// หน้าแรกให้เข้าได้จากลิงก์เดียว
 app.get("/", (req, res) => {
   res.redirect("/login.html");
 });
@@ -28,12 +26,10 @@ mongoose
   .then(() => console.log("MongoDB connected"))
   .catch((err) => console.log("MongoDB error:", err));
 
-// models
 const User = require("./models/User");
 const Message = require("./models/Message");
 const Room = require("./models/Room");
 
-// upload
 const storage = multer.diskStorage({
   destination: "./uploads/",
   filename: (req, file, cb) => {
@@ -52,7 +48,7 @@ app.post("/register", async (req, res) => {
       return res.json({ success: false, msg: "กรอกข้อมูลให้ครบ" });
     }
 
-    if (!email.match(/^\d{10}@psu\.ac\.th$/)) {
+    if (!/^\d{10}@psu\.ac\.th$/.test(email)) {
       return res.json({ success: false, msg: "ใช้เมล PSU เท่านั้น" });
     }
 
@@ -65,11 +61,11 @@ app.post("/register", async (req, res) => {
       email,
       name,
       password,
-      status: "offline"
+      status: "offline",
+      friends: []
     });
 
     await user.save();
-
     res.json({ success: true, msg: "สมัครสำเร็จ" });
   } catch (error) {
     console.log(error);
@@ -106,6 +102,38 @@ app.post("/login", async (req, res) => {
   }
 });
 
+// reset password
+app.post("/resetPassword", async (req, res) => {
+  try {
+    const { email, newPassword, confirmPassword } = req.body;
+
+    if (!email || !newPassword || !confirmPassword) {
+      return res.json({ success: false, msg: "กรุณากรอกข้อมูลให้ครบ" });
+    }
+
+    if (!/^\d{10}@psu\.ac\.th$/.test(email)) {
+      return res.json({ success: false, msg: "ใช้อีเมล PSU เท่านั้น" });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.json({ success: false, msg: "รหัสผ่านไม่ตรงกัน" });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.json({ success: false, msg: "ไม่พบอีเมลนี้ในระบบ" });
+    }
+
+    user.password = newPassword;
+    await user.save();
+
+    res.json({ success: true, msg: "รีเซ็ตรหัสผ่านสำเร็จ" });
+  } catch (error) {
+    console.log(error);
+    res.json({ success: false, msg: "เกิดข้อผิดพลาดในการรีเซ็ตรหัสผ่าน" });
+  }
+});
+
 // logout
 app.post("/logout", async (req, res) => {
   try {
@@ -121,6 +149,31 @@ app.post("/logout", async (req, res) => {
   } catch (error) {
     console.log(error);
     res.json({ success: false, msg: "เกิดข้อผิดพลาดในการออกจากระบบ" });
+  }
+});
+
+// search all users
+app.get("/searchUsers", async (req, res) => {
+  try {
+    const keyword = (req.query.keyword || "").trim();
+    const myEmail = req.query.myEmail;
+
+    if (!keyword) {
+      return res.json([]);
+    }
+
+    const users = await User.find({
+      email: { $ne: myEmail },
+      $or: [
+        { name: { $regex: keyword, $options: "i" } },
+        { email: { $regex: keyword, $options: "i" } }
+      ]
+    }).limit(20);
+
+    res.json(users);
+  } catch (error) {
+    console.log(error);
+    res.json([]);
   }
 });
 
@@ -184,16 +237,6 @@ app.post("/addFriend", async (req, res) => {
   }
 });
 
-app.get("/users", async (req, res) => {
-  try {
-    const users = await User.find().sort({ name: 1 });
-    res.json(users);
-  } catch (error) {
-    console.log(error);
-    res.json([]);
-  }
-});
-
 // create group
 app.post("/createRoom", async (req, res) => {
   try {
@@ -246,7 +289,7 @@ app.get("/rooms", async (req, res) => {
   }
 });
 
-// messages by room
+// messages
 app.get("/messages/:room", async (req, res) => {
   try {
     const msgs = await Message.find({ room: req.params.room }).sort({ _id: 1 });
@@ -257,7 +300,7 @@ app.get("/messages/:room", async (req, res) => {
   }
 });
 
-// upload file
+// upload
 app.post("/upload", upload.single("file"), (req, res) => {
   try {
     if (!req.file) {
@@ -275,13 +318,9 @@ app.post("/upload", upload.single("file"), (req, res) => {
   }
 });
 
-// socket
 io.on("connection", (socket) => {
-  console.log("A user connected:", socket.id);
-
   socket.on("joinRoom", (room) => {
     socket.join(room);
-    console.log(`Socket ${socket.id} joined room: ${room}`);
   });
 
   socket.on("userOnline", async (userData) => {
@@ -359,12 +398,8 @@ io.on("connection", (socket) => {
       console.log(error);
     }
   });
-
-  socket.on("disconnect", () => {
-    console.log("A user disconnected:", socket.id);
-  });
 });
 
 server.listen(PORT, () => {
-  console.log(`Server running on ${PORT}`);
+  console.log(`Server running:http://localhost:${PORT}`);
 });

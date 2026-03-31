@@ -31,7 +31,6 @@
   </style>
 </head>
 <body class="auth-body">
-
   <div class="auth-card">
     <div class="lang-switch">
       <button id="btn-th" onclick="setLang('th')">ไทย</button>
@@ -52,9 +51,18 @@
       <span id="noAccountText">ยังไม่มีบัญชี?</span>
       <a href="register.html" id="registerLink">สมัครสมาชิก</a>
     </p>
+
+    <p class="switch-page">
+      <a href="reset-password.html" id="forgotLink">ลืมรหัสผ่าน?</a>
+    </p>
   </div>
 
   <script>
+    const existingUser = localStorage.getItem("user");
+    if (existingUser) {
+      window.location.href = "chat.html";
+    }
+
     const translations = {
       th: {
         pageTitle: "Login - PSU Chat",
@@ -64,6 +72,7 @@
         loginBtn: "เข้าสู่ระบบ",
         noAccountText: "ยังไม่มีบัญชี?",
         registerLink: "สมัครสมาชิก",
+        forgotLink: "ลืมรหัสผ่าน?",
         emptyFields: "กรุณากรอกอีเมลและรหัสผ่าน"
       },
       en: {
@@ -74,6 +83,7 @@
         loginBtn: "Login",
         noAccountText: "Don't have an account?",
         registerLink: "Register",
+        forgotLink: "Forgot password?",
         emptyFields: "Please enter your email and password"
       }
     };
@@ -91,6 +101,7 @@
       document.getElementById("loginBtn").innerText = t.loginBtn;
       document.getElementById("noAccountText").innerText = t.noAccountText;
       document.getElementById("registerLink").innerText = t.registerLink;
+      document.getElementById("forgotLink").innerText = t.forgotLink;
 
       document.getElementById("btn-th").classList.toggle("active", currentLang === "th");
       document.getElementById("btn-en").classList.toggle("active", currentLang === "en");
@@ -133,19 +144,14 @@
     }
 
     document.getElementById("password").addEventListener("keydown", function (e) {
-      if (e.key === "Enter") {
-        login();
-      }
+      if (e.key === "Enter") login();
     });
 
     document.getElementById("email").addEventListener("keydown", function (e) {
-      if (e.key === "Enter") {
-        login();
-      }
+      if (e.key === "Enter") login();
     });
 
     applyLanguage();
   </script>
-
 </body>
 </html>
