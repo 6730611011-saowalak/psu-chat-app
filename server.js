@@ -12,6 +12,10 @@ const PORT = process.env.PORT || 3000;
 const MONGODB_URI =
   process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/chat";
 
+const User = require("./models/User");
+const Message = require("./models/Message");
+const Room = require("./models/Room");
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
@@ -23,12 +27,12 @@ app.get("/", (req, res) => {
 
 mongoose
   .connect(MONGODB_URI)
-  .then(() => console.log("MongoDB connected"))
+  .then(async () => {
+    console.log("MongoDB connected");
+    await User.updateMany({}, { status: "offline" });
+    console.log("Reset all users to offline");
+  })
   .catch((err) => console.log("MongoDB error:", err));
-
-const User = require("./models/User");
-const Message = require("./models/Message");
-const Room = require("./models/Room");
 
 const storage = multer.diskStorage({
   destination: "./uploads/",
@@ -415,8 +419,8 @@ io.on("connection", (socket) => {
       }
 
       console.log("User disconnected:", email);
-    } catch (err) {
-      console.log(err);
+    } catch (error) {
+      console.log(error);
     }
   });
 });
